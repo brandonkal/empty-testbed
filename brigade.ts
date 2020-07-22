@@ -13,7 +13,7 @@ events.on('check_run:rerequested', checkRequested)
 events.on('exec', localDev)
 
 // Our main test logic, refactored into a function that returns the job
-function runTests([e, p]: msg) {
+function runTests() {
   console.log('Running runTests')
   let testRunner = new Job('test-runner', 'python:3', [
     'cd /src',
@@ -26,14 +26,14 @@ function runTests([e, p]: msg) {
   return testRunner
 }
 
-function localDev([e, p]: msg) {
+function localDev([e]: msg) {
   // Common configuration
   const env: any = {
     CHECK_PAYLOAD: e.payload,
     CHECK_NAME: 'Brigade',
     CHECK_TITLE: 'Run Tests',
   }
-  return runTests([e, p])
+  return runTests()
     .run()
     .then((result) => {
       env.CHECK_CONCLUSION = 'success'
@@ -44,7 +44,7 @@ function localDev([e, p]: msg) {
     })
 }
 
-function checkRequested([e, p]: msg) {
+function checkRequested([e]: msg) {
   console.log('check requested')
 
   // This Check Run image handles updating GitHub
@@ -77,7 +77,7 @@ function checkRequested([e, p]: msg) {
   start
     .run()
     .then(() => {
-      return runTests([e, p]).run()
+      return runTests().run()
     })
     .then((result) => {
       end.env.CHECK_CONCLUSION = 'success'
@@ -97,6 +97,4 @@ function checkRequested([e, p]: msg) {
 events.on('after', ([e, proj]) => {
   console.log('After fired')
 })
-const m = import.meta
-
 init(import.meta)
