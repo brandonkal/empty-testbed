@@ -1,5 +1,7 @@
-//@ts-nocheck
-const { events, Job } = require('brigadier')
+/**
+ * Example brigade project for testing
+ */
+import { events, Job, init, msg } from 'brig'
 
 // GitHub Check events to watch for
 //
@@ -8,30 +10,41 @@ const { events, Job } = require('brigadier')
 events.on('check_suite:requested', checkRequested)
 events.on('check_suite:rerequested', checkRequested)
 events.on('check_run:rerequested', checkRequested)
+events.on('exec', localDev)
 
 // Our main test logic, refactored into a function that returns the job
-function runTests(e, project) {
-  // Create a new job
-  var testRunner = new Job('test-runner')
-
-  // We want our job to run the stock Docker Python 3 image
-  testRunner.image = 'python:3'
-
-  // Now we want it to run these commands in order:
-  testRunner.tasks = [
+function runTests([e, p]: msg) {
+  console.log('Running runTests')
+  let testRunner = new Job('test-runner', 'python:3', [
     'cd /src',
     'pip install -r requirements.txt',
     'python setup.py test',
-  ]
-
+  ])
   // Display logs from the job Pod
   testRunner.streamLogs = true
-
+  testRunner.timeout = 60e3
   return testRunner
 }
 
-// This runs our main test job, updating GitHub along the way
-function checkRequested(e, p) {
+function localDev([e, p]: msg) {
+  // Common configuration
+  const env: any = {
+    CHECK_PAYLOAD: e.payload,
+    CHECK_NAME: 'Brigade',
+    CHECK_TITLE: 'Run Tests',
+  }
+  return runTests([e, p])
+    .run()
+    .then((result) => {
+      env.CHECK_CONCLUSION = 'success'
+      env.CHECK_SUMMARY = 'Build completed'
+      env.CHECK_TEXT = result.toString()
+      console.log('Printing test environment results')
+      console.log(JSON.stringify(env))
+    })
+}
+
+function checkRequested([e, p]: msg) {
   console.log('check requested')
 
   // This Check Run image handles updating GitHub
@@ -64,7 +77,7 @@ function checkRequested(e, p) {
   start
     .run()
     .then(() => {
-      return runTests(e, p).run()
+      return runTests([e, p]).run()
     })
     .then((result) => {
       end.env.CHECK_CONCLUSION = 'success'
@@ -80,3 +93,10 @@ function checkRequested(e, p) {
       return end.run()
     })
 }
+
+events.on('after', ([e, proj]) => {
+  console.log('After fired')
+})
+const m = import.meta
+
+init(import.meta)

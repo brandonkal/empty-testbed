@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "brig": "/home/brandon/kite/infra/brigade-deno-worker/brigadier/mod.ts"
+  }
+}
