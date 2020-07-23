@@ -74,7 +74,7 @@ function checkRequested([e]: msg) {
   // - Notify GitHub of completion
   //
   // On error, we catch the error and notify GitHub of a failure.
-  start
+  return start
     .run()
     .then(() => {
       return runTests().run()
@@ -94,7 +94,7 @@ function checkRequested([e]: msg) {
     })
 }
 
-events.on('after', ([e, proj]) => {
+events.on('after', async ([e, proj]) => {
   console.log('After fired')
 })
 init(import.meta)
