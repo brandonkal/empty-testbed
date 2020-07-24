@@ -79,12 +79,6 @@ function checkRequested([e]: msg) {
     .then(() => {
       return runTests().run()
     })
-    .then((result) => {
-      end.env.CHECK_CONCLUSION = 'success'
-      end.env.CHECK_SUMMARY = 'Build completed'
-      end.env.CHECK_TEXT = result.toString()
-      return end.run()
-    })
     .catch((err) => {
       // In this case, we mark the ending failed.
       console.error('typeof err:', typeof err)
@@ -92,6 +86,12 @@ function checkRequested([e]: msg) {
       end.env.CHECK_CONCLUSION = 'failure'
       end.env.CHECK_SUMMARY = 'Build failed'
       end.env.CHECK_TEXT = `Error: ${err}`.replace('Error: Error:', 'Error:')
+      return end.run()
+    })
+    .then((result) => {
+      end.env.CHECK_CONCLUSION = 'success'
+      end.env.CHECK_SUMMARY = 'Build completed'
+      end.env.CHECK_TEXT = result.toString()
       return end.run()
     })
 }
