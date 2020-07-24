@@ -4,7 +4,6 @@
 import { events, Job, init, msg } from 'brig'
 
 // GitHub Check events to watch for
-//
 // Note that a GitHub App will automatically generate these events
 // from a `push` event, so we don't need an explicit push event handler any longer
 events.on('check_suite:requested', checkRequested)
@@ -44,7 +43,7 @@ function localDev([e]: msg) {
     })
 }
 
-function checkRequested([e]: msg) {
+async function checkRequested([e]: msg) {
   console.log('check requested')
 
   // This Check Run image handles updating GitHub
@@ -68,32 +67,21 @@ function checkRequested([e]: msg) {
   end.imageForcePull = false
   end.env = env
 
-  // Now we run the jobs in order:
-  // - Notify GitHub of start
-  // - Run the tests
-  // - Notify GitHub of completion
-  //
-  // On error, we catch the error and notify GitHub of a failure.
-  return start
-    .run()
-    .then(() => {
-      return runTests().run()
-    })
-    .catch((err) => {
-      // In this case, we mark the ending failed.
-      console.error('typeof err:', typeof err)
-      console.error(err)
-      end.env.CHECK_CONCLUSION = 'failure'
-      end.env.CHECK_SUMMARY = 'Build failed'
-      end.env.CHECK_TEXT = `Error: ${err}`.replace('Error: Error:', 'Error:')
-      return end.run()
-    })
-    .then((result) => {
-      end.env.CHECK_CONCLUSION = 'success'
-      end.env.CHECK_SUMMARY = 'Build completed'
-      end.env.CHECK_TEXT = result.toString()
-      return end.run()
-    })
+  try {
+    let r = await start.run().then(() => runTests().run())
+    end.env.CHECK_CONCLUSION = 'success'
+    end.env.CHECK_SUMMARY = 'Build completed'
+    end.env.CHECK_TEXT = r.toString()
+    return end.run()
+  } catch (err) {
+    // In this case, we mark the ending failed.
+    console.error('typeof err:', typeof err)
+    console.error(err)
+    end.env.CHECK_CONCLUSION = 'failure'
+    end.env.CHECK_SUMMARY = 'Build failed'
+    end.env.CHECK_TEXT = `Error: ${err}`.replace('Error: Error:', 'Error:')
+    return end.run()
+  }
 }
 
 events.on('after', async () => {
