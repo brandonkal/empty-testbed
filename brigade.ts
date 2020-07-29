@@ -74,18 +74,11 @@ async function checkRequested([e]: msg) {
     end.env.CHECK_TEXT = r.toString()
     return end.run()
   } catch (err) {
-    // In this case, we mark the ending failed.
-    console.error('typeof err:', typeof err)
-    console.error(err)
     end.env.CHECK_CONCLUSION = 'failure'
     end.env.CHECK_SUMMARY = 'Build failed'
     end.env.CHECK_TEXT = `Error: ${err}`.replace('Error: Error:', 'Error:')
     return end.run()
   }
 }
-
-events.on('after', async () => {
-  console.log('After fired')
-})
 
 init(import.meta)
